@@ -232,7 +232,7 @@
         if (source === 'comix') return 'Open Comix, copy the current Cookie request-header value, then replace COMIX_COOKIE in the private repository.';
         if (source === 'anilist') return 'Replace ANILIST_TOKEN in the private repository.';
         if (source === 'mangadex') return 'Check the MangaDex username, password and personal API client secrets.';
-        if (source === 'comick') return 'Check the configured ComicK URL/token.';
+        if (source === 'comick') return 'Use an explicit official comick.dev JSON history endpoint and check the configured token.';
       }
       if (status === 'blocked') return 'Refresh the cookie once. If HTTP 403 continues, Cloudflare may be rejecting GitHub-hosted runners rather than the cookie itself.';
       return '';
