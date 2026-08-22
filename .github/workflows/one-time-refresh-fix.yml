@@ -1,0 +1,273 @@
+name: One-time review refresh fix
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/review-refresh-fix.trigger
+
+permissions:
+  contents: write
+
+concurrency:
+  group: one-time-review-refresh-fix
+  cancel-in-progress: false
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Patch refresh and notification handling
+        shell: python
+        run: |
+          from pathlib import Path
+
+          path = Path('index.html')
+          text = path.read_text(encoding='utf-8')
+
+          anchor = '''    function friendlyTime(value) {
+      if (!value) return 'Never';
+      const date = new Date(value);
+      return Number.isNaN(date.valueOf()) ? 'Unknown' : date.toLocaleString();
+    }
+'''
+          helper = '''    function friendlyTime(value) {
+      if (!value) return 'Never';
+      const date = new Date(value);
+      return Number.isNaN(date.valueOf()) ? 'Unknown' : date.toLocaleString();
+    }
+
+    function withTimeout(promise, milliseconds, label) {
+      let timer;
+      const timeout = new Promise((_, reject) => {
+        timer = setTimeout(() => reject(new Error(`${label} timed out.`)), milliseconds);
+      });
+      return Promise.race([Promise.resolve(promise), timeout]).finally(() => clearTimeout(timer));
+    }
+'''
+          if 'function withTimeout(' not in text:
+              if anchor not in text:
+                  raise SystemExit('Could not find friendlyTime anchor.')
+              text = text.replace(anchor, helper, 1)
+
+          old_notification = '''        if ('serviceWorker' in navigator) {
+          const registration = await navigator.serviceWorker.ready;
+          await registration.showNotification(`${label} needs attention`, options);
+        } else {
+          new Notification(`${label} needs attention`, options);
+        }
+'''
+          new_notification = '''        if ('serviceWorker' in navigator) {
+          try {
+            const registration = await withTimeout(
+              navigator.serviceWorker.ready,
+              2500,
+              'Notification service worker'
+            );
+            await registration.showNotification(`${label} needs attention`, options);
+          } catch (serviceWorkerError) {
+            console.warn('Service-worker notification unavailable; using browser notification.', serviceWorkerError);
+            new Notification(`${label} needs attention`, options);
+          }
+        } else {
+          new Notification(`${label} needs attention`, options);
+        }
+'''
+          if old_notification in text:
+              text = text.replace(old_notification, new_notification, 1)
+          elif new_notification not in text:
+              raise SystemExit('Could not find notification block.')
+
+          old_source = '''    async function loadSourceStatus() {
+      const { data, error } = await client
+        .from('source_status')
+        .select('*')
+        .eq('owner_id', currentUser.id)
+        .order('source', { ascending: true });
+
+      if (error) {
+        const missing = /source_status|schema cache|does not exist/i.test(error.message || '');
+        migrationNotice.hidden = !missing;
+        latestStatuses = [];
+        renderSourceStatus([]);
+        if (!missing) setMessage(`Source health: ${error.message}`, 'error');
+        return;
+      }
+
+      migrationNotice.hidden = true;
+      latestStatuses = data || [];
+      renderSourceStatus(latestStatuses);
+      await notifyActionRequired(latestStatuses);
+    }
+'''
+          new_source = '''    async function loadSourceStatus() {
+      let result;
+      try {
+        result = await withTimeout(
+          client
+            .from('source_status')
+            .select('*')
+            .eq('owner_id', currentUser.id)
+            .order('source', { ascending: true }),
+          10000,
+          'Source health request'
+        );
+      } catch (requestError) {
+        latestStatuses = [];
+        renderSourceStatus([]);
+        setMessage(`Source health: ${requestError.message}`, 'error');
+        return;
+      }
+
+      const { data, error } = result;
+      if (error) {
+        const missing = /source_status|schema cache|does not exist/i.test(error.message || '');
+        migrationNotice.hidden = !missing;
+        latestStatuses = [];
+        renderSourceStatus([]);
+        if (!missing) setMessage(`Source health: ${error.message}`, 'error');
+        return;
+      }
+
+      migrationNotice.hidden = true;
+      latestStatuses = data || [];
+      renderSourceStatus(latestStatuses);
+      void notifyActionRequired(latestStatuses);
+    }
+'''
+          if old_source in text:
+              text = text.replace(old_source, new_source, 1)
+          elif new_source not in text:
+              raise SystemExit('Could not find loadSourceStatus block.')
+
+          old_pending_start = '''    async function loadPending() {
+      const { data, error } = await client
+        .from('pending_reviews')
+        .select('*')
+        .eq('owner_id', currentUser.id)
+        .eq('status', 'pending')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        setMessage(error.message, 'error');
+        return;
+      }
+'''
+          new_pending_start = '''    async function loadPending() {
+      let result;
+      try {
+        result = await withTimeout(
+          client
+            .from('pending_reviews')
+            .select('*')
+            .eq('owner_id', currentUser.id)
+            .eq('status', 'pending')
+            .order('created_at', { ascending: false }),
+          10000,
+          'Pending reviews request'
+        );
+      } catch (requestError) {
+        count.textContent = '';
+        list.innerHTML = `<p class="error">${escapeHtml(requestError.message)}</p>`;
+        return;
+      }
+
+      const { data, error } = result;
+      if (error) {
+        setMessage(error.message, 'error');
+        return;
+      }
+'''
+          if old_pending_start in text:
+              text = text.replace(old_pending_start, new_pending_start, 1)
+          elif new_pending_start not in text:
+              raise SystemExit('Could not find loadPending block.')
+
+          old_refresh = '''    async function refreshAll() {
+      if (!currentUser || refreshInProgress) return;
+      refreshInProgress = true;
+      setMessage('Refreshing…');
+      try {
+        await Promise.all([loadSourceStatus(), loadPending()]);
+        lastRefresh.textContent = `Updated ${new Date().toLocaleTimeString()}`;
+        setMessage('Up to date.', 'success');
+      } finally {
+        refreshInProgress = false;
+      }
+    }
+'''
+          new_refresh = '''    async function refreshAll() {
+      if (!currentUser || refreshInProgress) return;
+      refreshInProgress = true;
+      setMessage('Refreshing…');
+      try {
+        const results = await Promise.allSettled([loadSourceStatus(), loadPending()]);
+        const failures = results.filter((result) => result.status === 'rejected');
+        lastRefresh.textContent = `Updated ${new Date().toLocaleTimeString()}`;
+        if (failures.length) {
+          console.error('Refresh errors', failures.map((result) => result.reason));
+          setMessage('Refresh completed with an error. Check the connection cards.', 'error');
+        } else if (!message.classList.contains('error')) {
+          setMessage('Up to date.', 'success');
+        }
+      } catch (error) {
+        console.error('Unexpected refresh error', error);
+        setMessage(`Refresh failed: ${error.message || error}`, 'error');
+      } finally {
+        refreshInProgress = false;
+      }
+    }
+'''
+          if old_refresh in text:
+              text = text.replace(old_refresh, new_refresh, 1)
+          elif new_refresh not in text:
+              raise SystemExit('Could not find refreshAll block.')
+
+          old_session = '''      ownerId.textContent = currentUser?.id || '';
+      if (currentUser) await refreshAll();
+      else {
+'''
+          new_session = '''      ownerId.textContent = currentUser?.id || '';
+      if (currentUser) {
+        renderSourceStatus([]);
+        count.textContent = '';
+        list.innerHTML = '<p class="muted">Loading review queue…</p>';
+        await refreshAll();
+      } else {
+'''
+          if old_session in text:
+              text = text.replace(old_session, new_session, 1)
+          elif new_session not in text:
+              raise SystemExit('Could not find setSession block.')
+
+          path.write_text(text, encoding='utf-8')
+
+      - name: Validate patched page
+        shell: bash
+        run: |
+          git diff --check
+          grep -F "function withTimeout" index.html
+          grep -F "void notifyActionRequired" index.html
+          grep -F "Promise.allSettled" index.html
+          grep -F "Loading review queue" index.html
+          test -f manifest.webmanifest
+          test -f service-worker.js
+
+      - name: Commit verified change
+        shell: bash
+        run: |
+          if git diff --quiet -- index.html; then
+            echo "Review refresh fix is already present."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git commit -m "fix: prevent review refresh from hanging"
+          git push
