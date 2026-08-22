@@ -1,0 +1,278 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'unsafe-inline'; connect-src https://*.supabase.co; img-src 'self' data: https://s4.anilist.co https://*.anilist.co; base-uri 'none'; form-action 'self'; frame-ancestors 'none'">
+  <title>Manga Sync Review</title>
+  <style>
+    :root { color-scheme: light dark; font-family: system-ui, sans-serif; }
+    body { max-width: 920px; margin: 2rem auto; padding: 0 1rem; line-height: 1.45; }
+    header, .toolbar, .actions { display: flex; gap: .75rem; align-items: center; flex-wrap: wrap; }
+    header { justify-content: space-between; }
+    input, button { font: inherit; padding: .65rem; }
+    input[type="email"] { min-width: 260px; }
+    button { cursor: pointer; }
+    .card { border: 1px solid #8887; border-radius: 12px; padding: 1rem; margin: 1rem 0; }
+    .meta { opacity: .8; }
+    .candidate { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 1rem; align-items: center; }
+    .candidate img { width: 86px; max-height: 125px; object-fit: cover; border-radius: 8px; }
+    .field { display: grid; gap: .35rem; margin: .7rem 0; }
+    .error { color: #d33; white-space: pre-wrap; }
+    .success { color: #2a8b4a; }
+    code { overflow-wrap: anywhere; }
+    [hidden] { display: none !important; }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>Manga Sync Review</h1>
+      <p>Confirm or reject matches that the bridge would not apply automatically.</p>
+    </div>
+    <button id="signOut" hidden>Sign out</button>
+  </header>
+
+  <section id="login">
+    <h2>Sign in</h2>
+    <p>Enter the email used for your Supabase Auth account. Supabase will send a magic link.</p>
+    <form id="loginForm" class="toolbar">
+      <input id="email" type="email" autocomplete="email" placeholder="you@example.com" required>
+      <button type="submit">Email magic link</button>
+    </form>
+  </section>
+
+  <section id="app" hidden>
+    <p>Your Supabase owner ID is <code id="ownerId"></code>.</p>
+    <p>Store this exact value in the GitHub Actions secret <code>SUPABASE_OWNER_ID</code>.</p>
+    <div class="toolbar">
+      <button id="copyOwnerId">Copy owner ID</button>
+      <button id="refresh">Refresh pending matches</button>
+      <strong id="count"></strong>
+    </div>
+    <div id="list"></div>
+  </section>
+
+  <p id="message" role="status"></p>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.8/dist/umd/supabase.js"></script>
+  <script>
+    // Replace these before publishing. A publishable/anon key is safe here only with RLS enabled.
+    // Never use SUPABASE_KEY, a secret key, or a service_role key in this HTML file.
+    const SUPABASE_URL = 'https://kmzcjuuihkremehachwx.supabase.co';
+    const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_HHi-vqoezvB57mT9_y_RLQ_TMRz9T-V';
+
+    const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+    const loginSection = document.querySelector('#login');
+    const appSection = document.querySelector('#app');
+    const signOutButton = document.querySelector('#signOut');
+    const list = document.querySelector('#list');
+    const count = document.querySelector('#count');
+    const ownerId = document.querySelector('#ownerId');
+    const message = document.querySelector('#message');
+    let currentUser = null;
+
+    function setMessage(text, type = '') {
+      message.textContent = text;
+      message.className = type;
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? '')
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#039;');
+    }
+
+    function safeHttpsUrl(value) {
+      try {
+        const url = new URL(String(value));
+        return url.protocol === 'https:' ? url.href : null;
+      } catch {
+        return null;
+      }
+    }
+
+    async function loadPending() {
+      if (!currentUser) return;
+      setMessage('Loading…');
+
+      const { data, error } = await client
+        .from('pending_reviews')
+        .select('*')
+        .eq('owner_id', currentUser.id)
+        .eq('status', 'pending')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        setMessage(error.message, 'error');
+        return;
+      }
+
+      list.innerHTML = '';
+      for (const row of data || []) list.append(renderReview(row));
+      count.textContent = `${data?.length || 0} pending`;
+      setMessage(data?.length ? '' : 'Nothing needs review.', 'success');
+    }
+
+    function renderReview(row) {
+      const card = document.createElement('article');
+      card.className = 'card';
+
+      const coverUrl = safeHttpsUrl(row.candidate_cover_url);
+      const candidateId = Number(row.candidate_anilist_id) || '';
+      const confidence = Number.isFinite(Number(row.confidence_score))
+        ? `${Number(row.confidence_score)}%`
+        : 'unknown';
+
+      card.innerHTML = `
+        <h2>${escapeHtml(row.site_title)}</h2>
+        <p class="meta">
+          Source: ${escapeHtml(row.site)} · Author: ${escapeHtml(row.site_author || 'unavailable')}
+          · Chapter: ${escapeHtml(row.site_chapter ?? 'unknown')}
+        </p>
+        <div class="candidate">
+          <div>
+            <h3>Suggested AniList match</h3>
+            <p>${escapeHtml(row.candidate_title || 'No candidate found')}</p>
+            <p class="meta">${escapeHtml(row.candidate_author || 'Author unavailable')} · ${escapeHtml(confidence)}</p>
+          </div>
+          ${coverUrl ? `<img src="${escapeHtml(coverUrl)}" alt="Candidate cover">` : ''}
+        </div>
+        <label class="field">
+          AniList manga ID
+          <input class="anilistId" type="number" min="1" inputmode="numeric" value="${escapeHtml(candidateId)}" placeholder="Enter an AniList manga ID">
+        </label>
+        <div class="actions">
+          <button class="openCandidate" ${candidateId ? '' : 'disabled'}>Open AniList candidate</button>
+          <button class="confirm">Confirm mapping</button>
+          <button class="reject">Reject</button>
+        </div>
+      `;
+
+      const idInput = card.querySelector('.anilistId');
+      const openButton = card.querySelector('.openCandidate');
+
+      idInput.addEventListener('input', () => {
+        openButton.disabled = !Number(idInput.value);
+      });
+
+      openButton.addEventListener('click', () => {
+        const id = Number(idInput.value);
+        if (Number.isInteger(id) && id > 0) {
+          window.open(`https://anilist.co/manga/${id}`, '_blank', 'noopener,noreferrer');
+        }
+      });
+
+      card.querySelector('.confirm').addEventListener('click', async () => {
+        const mediaId = Number(idInput.value);
+        if (!Number.isInteger(mediaId) || mediaId <= 0) {
+          setMessage('Enter a valid AniList manga ID.', 'error');
+          return;
+        }
+
+        setMessage('Saving mapping…');
+        const mapping = {
+          owner_id: currentUser.id,
+          site: row.site,
+          site_manga_id: row.site_manga_id,
+          site_title: row.site_title,
+          anilist_id: mediaId,
+          anilist_title: row.candidate_anilist_id === mediaId
+            ? row.candidate_title
+            : `Manually selected AniList ID ${mediaId}`,
+          verified_at: new Date().toISOString(),
+          auto_matched: false
+        };
+
+        const { error: mappingError } = await client
+          .from('manga_mappings')
+          .upsert(mapping, { onConflict: 'site,site_manga_id' });
+
+        if (mappingError) {
+          setMessage(mappingError.message, 'error');
+          return;
+        }
+
+        const { error: reviewError } = await client
+          .from('pending_reviews')
+          .update({ status: 'confirmed', updated_at: new Date().toISOString() })
+          .eq('id', row.id)
+          .eq('owner_id', currentUser.id);
+
+        if (reviewError) {
+          setMessage(reviewError.message, 'error');
+          return;
+        }
+
+        card.remove();
+        count.textContent = `${list.children.length} pending`;
+        setMessage('Mapping confirmed. The next live sync will use it.', 'success');
+      });
+
+      card.querySelector('.reject').addEventListener('click', async () => {
+        setMessage('Rejecting…');
+        const { error } = await client
+          .from('pending_reviews')
+          .update({ status: 'rejected', updated_at: new Date().toISOString() })
+          .eq('id', row.id)
+          .eq('owner_id', currentUser.id);
+
+        if (error) {
+          setMessage(error.message, 'error');
+          return;
+        }
+
+        card.remove();
+        count.textContent = `${list.children.length} pending`;
+        setMessage('Match rejected.', 'success');
+      });
+
+      return card;
+    }
+
+    async function setSession(session) {
+      currentUser = session?.user || null;
+      loginSection.hidden = Boolean(currentUser);
+      appSection.hidden = !currentUser;
+      signOutButton.hidden = !currentUser;
+      ownerId.textContent = currentUser?.id || '';
+      if (currentUser) await loadPending();
+      else list.innerHTML = '';
+    }
+
+    document.querySelector('#loginForm').addEventListener('submit', async (event) => {
+      event.preventDefault();
+      setMessage('Sending magic link…');
+      const email = document.querySelector('#email').value.trim();
+      const redirectTo = window.location.origin + window.location.pathname;
+      const { error } = await client.auth.signInWithOtp({
+        email,
+        options: { emailRedirectTo: redirectTo, shouldCreateUser: true }
+      });
+      setMessage(
+        error ? error.message : 'Check your email for the sign-in link.',
+        error ? 'error' : 'success'
+      );
+    });
+
+    document.querySelector('#refresh').addEventListener('click', loadPending);
+    document.querySelector('#copyOwnerId').addEventListener('click', async () => {
+      if (!currentUser) return;
+      await navigator.clipboard.writeText(currentUser.id);
+      setMessage('Owner ID copied.', 'success');
+    });
+
+    signOutButton.addEventListener('click', async () => {
+      await client.auth.signOut();
+      setMessage('Signed out.', 'success');
+    });
+
+    client.auth.onAuthStateChange((_event, session) => setSession(session));
+    client.auth.getSession().then(({ data }) => setSession(data.session));
+  </script>
+</body>
+</html>
