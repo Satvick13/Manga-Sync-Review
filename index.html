@@ -362,7 +362,7 @@
       migrationNotice.hidden = true;
       latestStatuses = data || [];
       renderSourceStatus(latestStatuses);
-      await notifyActionRequired(latestStatuses);
+      void notifyActionRequired(latestStatuses);
     }
 
     async function loadPending() {
