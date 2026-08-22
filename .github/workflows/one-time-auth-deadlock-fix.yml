@@ -1,0 +1,149 @@
+name: One-time Supabase auth deadlock fix
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/auth-deadlock-fix.trigger
+
+permissions:
+  contents: write
+
+concurrency:
+  group: one-time-auth-deadlock-fix
+  cancel-in-progress: false
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Remove async work from onAuthStateChange
+        shell: python
+        run: |
+          from pathlib import Path
+
+          path = Path('index.html')
+          text = path.read_text(encoding='utf-8')
+
+          old_session = '''    async function setSession(session) {
+      currentUser = session?.user || null;
+      loginSection.hidden = Boolean(currentUser);
+      appSection.hidden = !currentUser;
+      signOutButton.hidden = !currentUser;
+      ownerId.textContent = currentUser?.id || '';
+      if (currentUser) await refreshAll();
+      else {
+        list.innerHTML = '';
+        sourceGrid.innerHTML = '';
+      }
+    }
+'''
+
+          new_session = '''    function applySession(session) {
+      currentUser = session?.user || null;
+      loginSection.hidden = Boolean(currentUser);
+      appSection.hidden = !currentUser;
+      signOutButton.hidden = !currentUser;
+      ownerId.textContent = currentUser?.id || '';
+
+      if (currentUser) {
+        renderSourceStatus([]);
+        count.textContent = '';
+        list.innerHTML = '<p class="muted">Loading review queue…</p>';
+        window.setTimeout(() => {
+          void refreshAll();
+        }, 0);
+      } else {
+        refreshInProgress = false;
+        list.innerHTML = '';
+        sourceGrid.innerHTML = '';
+        connectionSummary.innerHTML = '';
+        count.textContent = '';
+      }
+    }
+'''
+
+          if old_session in text:
+              text = text.replace(old_session, new_session, 1)
+          elif new_session not in text:
+              raise SystemExit('Could not find the existing session handler.')
+
+          old_refresh_listener = "    document.querySelector('#refresh').addEventListener('click', refreshAll);"
+          new_refresh_listener = "    document.querySelector('#refresh').addEventListener('click', () => { void refreshAll(); });"
+          if old_refresh_listener in text:
+              text = text.replace(old_refresh_listener, new_refresh_listener, 1)
+          elif new_refresh_listener not in text:
+              raise SystemExit('Could not find the refresh listener.')
+
+          old_signout = '''    signOutButton.addEventListener('click', async () => {
+      await client.auth.signOut();
+      setMessage('Signed out.', 'success');
+    });
+'''
+          new_signout = '''    signOutButton.addEventListener('click', async () => {
+      signOutButton.disabled = true;
+      setMessage('Signing out…');
+      try {
+        const { error } = await client.auth.signOut();
+        if (error) throw error;
+        applySession(null);
+        setMessage('Signed out.', 'success');
+      } catch (error) {
+        setMessage(`Sign out failed: ${error.message || error}`, 'error');
+      } finally {
+        signOutButton.disabled = false;
+      }
+    });
+'''
+          if old_signout in text:
+              text = text.replace(old_signout, new_signout, 1)
+          elif new_signout not in text:
+              raise SystemExit('Could not find the sign-out listener.')
+
+          old_auth = '''    client.auth.onAuthStateChange((_event, session) => setSession(session));
+    client.auth.getSession().then(({ data }) => setSession(data.session));
+'''
+          new_auth = '''    client.auth.onAuthStateChange((_event, session) => {
+      // Keep this callback synchronous. Supabase calls made inside an async auth callback can deadlock.
+      window.setTimeout(() => applySession(session), 0);
+    });
+    client.auth.getSession()
+      .then(({ data }) => applySession(data.session))
+      .catch((error) => setMessage(`Session load failed: ${error.message || error}`, 'error'));
+'''
+          if old_auth in text:
+              text = text.replace(old_auth, new_auth, 1)
+          elif new_auth not in text:
+              raise SystemExit('Could not find the auth subscription block.')
+
+          path.write_text(text, encoding='utf-8')
+
+      - name: Validate the page
+        shell: bash
+        run: |
+          git diff --check
+          grep -F 'function applySession(session)' index.html
+          grep -F 'Keep this callback synchronous' index.html
+          grep -F "addEventListener('click', () => { void refreshAll(); });" index.html
+          grep -F 'Sign out failed:' index.html
+          test -f manifest.webmanifest
+          test -f service-worker.js
+
+      - name: Commit verified fix
+        shell: bash
+        run: |
+          if git diff --quiet -- index.html; then
+            echo 'Auth deadlock fix is already present.'
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git commit -m "fix: avoid Supabase auth callback deadlock"
+          git push
