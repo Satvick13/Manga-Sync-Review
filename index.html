@@ -15,23 +15,14 @@
     :root {
       color-scheme: dark;
       font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      --bg: #0b1120;
-      --panel: #111827;
-      --panel-2: #172033;
-      --line: #334155;
-      --text: #f8fafc;
-      --muted: #94a3b8;
-      --good: #34d399;
-      --warn: #fbbf24;
-      --bad: #fb7185;
-      --info: #60a5fa;
+      --bg: #0b1120; --panel: #111827; --panel2: #172033; --line: #334155;
+      --text: #f8fafc; --muted: #94a3b8; --good: #34d399; --warn: #fbbf24;
+      --bad: #fb7185; --info: #60a5fa;
     }
     * { box-sizing: border-box; }
     body {
-      margin: 0;
-      min-height: 100vh;
+      margin: 0; min-height: 100vh; color: var(--text);
       background: radial-gradient(circle at top, #172554 0, var(--bg) 35rem);
-      color: var(--text);
       line-height: 1.5;
     }
     main { width: min(1080px, 100%); margin: 0 auto; padding: 1.2rem; }
@@ -41,42 +32,31 @@
     h2 { margin-bottom: .8rem; }
     .muted, .meta { color: var(--muted); }
     .panel {
-      background: color-mix(in srgb, var(--panel) 94%, transparent);
-      border: 1px solid var(--line);
-      border-radius: 18px;
-      padding: 1rem;
-      margin-bottom: 1rem;
-      box-shadow: 0 15px 45px #0005;
+      background: rgba(17, 24, 39, .96); border: 1px solid var(--line); border-radius: 18px;
+      padding: 1rem; margin-bottom: 1rem; box-shadow: 0 15px 45px #0005;
     }
-    .toolbar, .actions { display: flex; gap: .65rem; align-items: center; flex-wrap: wrap; }
-    button, input {
-      font: inherit;
-      border-radius: 10px;
-      border: 1px solid var(--line);
-      padding: .7rem .85rem;
-    }
+    .toolbar, .actions, .summary { display: flex; gap: .65rem; align-items: center; flex-wrap: wrap; }
+    button, input { font: inherit; border-radius: 10px; border: 1px solid var(--line); padding: .7rem .85rem; }
     input { min-width: min(100%, 280px); color: var(--text); background: #0f172a; }
     button { color: var(--text); background: #1d4ed8; cursor: pointer; font-weight: 650; }
     button.secondary { background: #1e293b; }
     button.danger { background: #881337; }
-    button:disabled { opacity: .5; cursor: not-allowed; }
+    button:disabled { opacity: .55; cursor: not-allowed; }
     code { overflow-wrap: anywhere; color: #c4b5fd; }
-    .summary { display: flex; gap: .6rem; align-items: center; flex-wrap: wrap; margin-bottom: .9rem; }
+    .summary { margin-bottom: .9rem; }
     .pill { border: 1px solid var(--line); background: #0f172a; border-radius: 999px; padding: .3rem .65rem; font-size: .9rem; }
     .source-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: .8rem; }
-    .source-card { border: 1px solid var(--line); background: var(--panel-2); border-radius: 14px; padding: .9rem; min-height: 150px; }
-    .source-card.good { border-color: color-mix(in srgb, var(--good) 70%, var(--line)); }
-    .source-card.warn { border-color: color-mix(in srgb, var(--warn) 70%, var(--line)); }
-    .source-card.bad { border-color: color-mix(in srgb, var(--bad) 70%, var(--line)); }
+    .source-card { border: 1px solid var(--line); background: var(--panel2); border-radius: 14px; padding: .9rem; min-height: 150px; }
+    .source-card.good { border-color: var(--good); }
+    .source-card.warn { border-color: var(--warn); }
+    .source-card.bad { border-color: var(--bad); }
     .source-head { display: flex; justify-content: space-between; gap: .5rem; align-items: center; }
     .source-head h3 { margin: 0; }
     .status { font-size: .82rem; font-weight: 750; text-transform: uppercase; letter-spacing: .04em; }
-    .good .status { color: var(--good); }
-    .warn .status { color: var(--warn); }
-    .bad .status { color: var(--bad); }
+    .good .status { color: var(--good); } .warn .status { color: var(--warn); } .bad .status { color: var(--bad); }
     .source-card .message { margin: .7rem 0; }
     .attention { border-radius: 10px; background: #4c0519; border: 1px solid #fb718577; padding: .55rem; color: #fecdd3; font-size: .9rem; }
-    .review-card { border: 1px solid var(--line); border-radius: 14px; padding: 1rem; margin: .8rem 0; background: var(--panel-2); }
+    .review-card { border: 1px solid var(--line); border-radius: 14px; padding: 1rem; margin: .8rem 0; background: var(--panel2); }
     .candidate { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 1rem; align-items: center; }
     .candidate img { width: 86px; max-height: 125px; object-fit: cover; border-radius: 9px; }
     .field { display: grid; gap: .35rem; margin: .8rem 0; }
@@ -85,12 +65,9 @@
     .notice { border-left: 4px solid var(--info); padding: .75rem; background: #172554; border-radius: 8px; }
     [hidden] { display: none !important; }
     @media (max-width: 640px) {
-      main { padding: .8rem; }
-      header { align-items: stretch; flex-direction: column; }
-      header button { width: 100%; }
-      .candidate { grid-template-columns: 1fr; }
-      .candidate img { order: -1; }
-      .toolbar > button { flex: 1 1 auto; }
+      main { padding: .8rem; } header { align-items: stretch; flex-direction: column; }
+      header button { width: 100%; } .candidate { grid-template-columns: 1fr; }
+      .candidate img { order: -1; } .toolbar > button { flex: 1 1 auto; }
     }
   </style>
 </head>
@@ -148,7 +125,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.8/dist/umd/supabase.js"></script>
   <script>
-    // Browser-safe values only. Never put SUPABASE_KEY/service_role/other site secrets here.
+    // Browser-safe values only. Never put a service-role/secret key or manga-site credential here.
     const SUPABASE_URL = 'https://kmzcjuuihkremehachwx.supabase.co';
     const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_HHi-vqoezvB57mT9_y_RLQ_TMRz9T-V';
 
@@ -162,19 +139,17 @@
       ['supabase', 'Supabase']
     ];
     const STATUS_LABELS = {
-      connected: 'Connected',
-      warning: 'Warning',
-      auth_required: 'Sign-in required',
-      blocked: 'Blocked',
-      error: 'Error',
-      rate_limited: 'Rate limited',
-      not_configured: 'Not configured',
-      unknown: 'Awaiting first run'
+      connected: 'Connected', warning: 'Warning', auth_required: 'Sign-in required',
+      blocked: 'Blocked', error: 'Error', rate_limited: 'Rate limited',
+      not_configured: 'Not configured', unknown: 'Awaiting first run'
     };
 
     const loginSection = document.querySelector('#login');
     const appSection = document.querySelector('#app');
     const signOutButton = document.querySelector('#signOut');
+    const refreshButton = document.querySelector('#refresh');
+    const notificationButton = document.querySelector('#enableNotifications');
+    const installButton = document.querySelector('#installApp');
     const list = document.querySelector('#list');
     const count = document.querySelector('#count');
     const ownerId = document.querySelector('#ownerId');
@@ -182,14 +157,13 @@
     const sourceGrid = document.querySelector('#sourceGrid');
     const migrationNotice = document.querySelector('#migrationNotice');
     const connectionSummary = document.querySelector('#connectionSummary');
-    const notificationButton = document.querySelector('#enableNotifications');
-    const installButton = document.querySelector('#installApp');
     const lastRefresh = document.querySelector('#lastRefresh');
 
     let currentUser = null;
     let latestStatuses = [];
     let deferredInstallPrompt = null;
     let refreshInProgress = false;
+    let appliedUserId = undefined;
 
     function setMessage(text, type = '') {
       message.textContent = text;
@@ -198,11 +172,8 @@
 
     function escapeHtml(value) {
       return String(value ?? '')
-        .replaceAll('&', '&amp;')
-        .replaceAll('<', '&lt;')
-        .replaceAll('>', '&gt;')
-        .replaceAll('"', '&quot;')
-        .replaceAll("'", '&#039;');
+        .replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;').replaceAll("'", '&#039;');
     }
 
     function safeHttpsUrl(value) {
@@ -220,6 +191,15 @@
       return Number.isNaN(date.valueOf()) ? 'Unknown' : date.toLocaleString();
     }
 
+    function withTimeout(promise, milliseconds, label) {
+      let timer;
+      const timeout = new Promise((_, reject) => {
+        timer = window.setTimeout(() => reject(new Error(`${label} timed out.`)), milliseconds);
+      });
+      return Promise.race([Promise.resolve(promise), timeout])
+        .finally(() => window.clearTimeout(timer));
+    }
+
     function statusClass(row) {
       if (row.status === 'connected') return 'good';
       if (row.action_required || ['auth_required', 'blocked', 'error'].includes(row.status)) return 'bad';
@@ -228,55 +208,52 @@
 
     function actionHelp(source, status) {
       if (status === 'auth_required') {
-        if (source === 'mangafire') return 'Open MangaFire, copy the current Cookie request-header value, then replace MANGAFIRE_COOKIE in the private repository.';
-        if (source === 'comix') return 'Open Comix, copy the current Cookie request-header value, then replace COMIX_COOKIE in the private repository.';
-        if (source === 'anilist') return 'Replace ANILIST_TOKEN in the private repository.';
-        if (source === 'mangadex') return 'Check the MangaDex username, password and personal API client secrets.';
-        if (source === 'comick') return 'Use an explicit official comick.dev JSON history endpoint and check the configured token.';
+        if (source === 'mangafire') return 'Replace MANGAFIRE_COOKIE in the private bridge repository.';
+        if (source === 'comix') return 'Replace COMIX_COOKIE in the private bridge repository.';
+        if (source === 'anilist') return 'Replace ANILIST_TOKEN in the private bridge repository.';
+        if (source === 'mangadex') return 'Check the MangaDex credentials and personal API client.';
       }
-      if (status === 'blocked') return 'Refresh the cookie once. If HTTP 403 continues, Cloudflare may be rejecting GitHub-hosted runners rather than the cookie itself.';
+      if (status === 'blocked') {
+        return 'Refresh the cookie once. If HTTP 403 continues, Cloudflare may be rejecting GitHub-hosted runners.';
+      }
       return '';
     }
 
     function renderSourceStatus(rows) {
-      const map = new Map(rows.map((row) => [row.source, row]));
+      const map = new Map((rows || []).map((row) => [row.source, row]));
       map.set('supabase', {
-        source: 'supabase',
-        status: 'connected',
+        source: 'supabase', status: 'connected',
         message: 'The review app is connected to Supabase.',
-        action_required: false,
-        consecutive_failures: 0,
+        action_required: false, consecutive_failures: 0,
         last_checked_at: new Date().toISOString()
       });
 
       sourceGrid.innerHTML = '';
       let connected = 0;
       let attention = 0;
-      let configured = 0;
+      let reported = 0;
 
       for (const [key, label] of EXPECTED_SOURCES) {
         const row = map.get(key) || {
-          source: key,
-          status: 'unknown',
-          message: key === 'supabase' ? 'Checking…' : 'No source-health record yet. Run the workflow once.',
-          action_required: false,
-          consecutive_failures: 0,
-          last_checked_at: null
+          source: key, status: 'unknown',
+          message: key === 'supabase' ? 'Checking…' : 'No source-health record yet. Run the bridge workflow once.',
+          action_required: false, consecutive_failures: 0, last_checked_at: null
         };
         if (row.status === 'connected') connected += 1;
-        if (row.status !== 'not_configured' && row.status !== 'unknown') configured += 1;
+        if (!['not_configured', 'unknown'].includes(row.status)) reported += 1;
         if (row.action_required) attention += 1;
 
+        const help = row.action_required ? actionHelp(key, row.status) : '';
         const card = document.createElement('article');
         card.className = `source-card ${statusClass(row)}`;
-        const help = row.action_required ? actionHelp(key, row.status) : '';
         card.innerHTML = `
           <div class="source-head">
             <h3>${escapeHtml(label)}</h3>
             <span class="status">${escapeHtml(STATUS_LABELS[row.status] || row.status)}</span>
           </div>
           <p class="message">${escapeHtml(row.message || 'No details available.')}</p>
-          <p class="meta">Checked: ${escapeHtml(friendlyTime(row.last_checked_at))}<br>Consecutive failures: ${escapeHtml(row.consecutive_failures || 0)}</p>
+          <p class="meta">Checked: ${escapeHtml(friendlyTime(row.last_checked_at))}<br>
+          Consecutive failures: ${escapeHtml(row.consecutive_failures || 0)}</p>
           ${row.action_required ? `<div class="attention"><strong>Action required</strong>${help ? `<br>${escapeHtml(help)}` : ''}</div>` : ''}
         `;
         sourceGrid.append(card);
@@ -284,7 +261,7 @@
 
       connectionSummary.innerHTML = `
         <span class="pill">${connected}/${EXPECTED_SOURCES.length} connected</span>
-        <span class="pill">${configured} configured/reported</span>
+        <span class="pill">${reported} configured/reported</span>
         <span class="pill">${attention} need attention</span>
       `;
     }
@@ -297,19 +274,23 @@
       if (!('Notification' in window) || Notification.permission !== 'granted') return;
       const key = notificationKey(row);
       if (localStorage.getItem(key)) return;
+
       const label = EXPECTED_SOURCES.find(([source]) => source === row.source)?.[1] || row.source;
       const options = {
         body: row.message || `${label} needs attention.`,
-        tag: `manga-sync-${row.source}`,
-        renotify: false,
-        icon: 'icon.svg',
-        badge: 'icon.svg',
+        tag: `manga-sync-${row.source}`, renotify: false,
+        icon: 'icon.svg', badge: 'icon.svg',
         data: { url: window.location.href }
       };
+
       try {
         if ('serviceWorker' in navigator) {
-          const registration = await navigator.serviceWorker.ready;
-          await registration.showNotification(`${label} needs attention`, options);
+          try {
+            const registration = await withTimeout(navigator.serviceWorker.ready, 2500, 'Notification service worker');
+            await registration.showNotification(`${label} needs attention`, options);
+          } catch {
+            new Notification(`${label} needs attention`, options);
+          }
         } else {
           new Notification(`${label} needs attention`, options);
         }
@@ -320,7 +301,7 @@
     }
 
     async function notifyActionRequired(rows) {
-      for (const row of rows.filter((entry) => entry.action_required)) {
+      for (const row of (rows || []).filter((entry) => entry.action_required)) {
         await showActionNotification(row);
       }
     }
@@ -329,9 +310,7 @@
       if (!('Notification' in window)) {
         notificationButton.textContent = 'Notifications unsupported';
         notificationButton.disabled = true;
-        return;
-      }
-      if (Notification.permission === 'granted') {
+      } else if (Notification.permission === 'granted') {
         notificationButton.textContent = 'Notifications enabled';
         notificationButton.disabled = true;
       } else if (Notification.permission === 'denied') {
@@ -344,19 +323,28 @@
     }
 
     async function loadSourceStatus() {
-      const { data, error } = await client
-        .from('source_status')
-        .select('*')
-        .eq('owner_id', currentUser.id)
-        .order('source', { ascending: true });
+      let result;
+      try {
+        result = await withTimeout(
+          client.from('source_status').select('*')
+            .eq('owner_id', currentUser.id)
+            .order('source', { ascending: true }),
+          12000,
+          'Source-health request'
+        );
+      } catch (error) {
+        latestStatuses = [];
+        renderSourceStatus([]);
+        throw error;
+      }
 
+      const { data, error } = result;
       if (error) {
         const missing = /source_status|schema cache|does not exist/i.test(error.message || '');
         migrationNotice.hidden = !missing;
         latestStatuses = [];
         renderSourceStatus([]);
-        if (!missing) setMessage(`Source health: ${error.message}`, 'error');
-        return;
+        throw new Error(`Source health: ${error.message}`);
       }
 
       migrationNotice.hidden = true;
@@ -365,46 +353,13 @@
       void notifyActionRequired(latestStatuses);
     }
 
-    async function loadPending() {
-      const { data, error } = await client
-        .from('pending_reviews')
-        .select('*')
-        .eq('owner_id', currentUser.id)
-        .eq('status', 'pending')
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        setMessage(error.message, 'error');
-        return;
-      }
-
-      list.innerHTML = '';
-      for (const row of data || []) list.append(renderReview(row));
-      count.textContent = `${data?.length || 0} pending`;
-      if (!data?.length) list.innerHTML = '<p class="success">Nothing needs review.</p>';
-    }
-
-    async function refreshAll() {
-      if (!currentUser || refreshInProgress) return;
-      refreshInProgress = true;
-      setMessage('Refreshing…');
-      try {
-        await Promise.all([loadSourceStatus(), loadPending()]);
-        lastRefresh.textContent = `Updated ${new Date().toLocaleTimeString()}`;
-        setMessage('Up to date.', 'success');
-      } finally {
-        refreshInProgress = false;
-      }
-    }
-
     function renderReview(row) {
       const card = document.createElement('article');
       card.className = 'review-card';
       const coverUrl = safeHttpsUrl(row.candidate_cover_url);
       const candidateId = Number(row.candidate_anilist_id) || '';
       const confidence = Number.isFinite(Number(row.confidence_score))
-        ? `${Number(row.confidence_score)}%`
-        : 'unknown';
+        ? `${Number(row.confidence_score)}%` : 'unknown';
 
       card.innerHTML = `
         <h3>${escapeHtml(row.site_title)}</h3>
@@ -444,19 +399,17 @@
           setMessage('Enter a valid AniList manga ID.', 'error');
           return;
         }
+
         setMessage('Saving mapping…');
         const mapping = {
-          owner_id: currentUser.id,
-          site: row.site,
-          site_manga_id: row.site_manga_id,
-          site_title: row.site_title,
+          owner_id: currentUser.id, site: row.site,
+          site_manga_id: row.site_manga_id, site_title: row.site_title,
           anilist_id: mediaId,
           anilist_title: row.candidate_anilist_id === mediaId
-            ? row.candidate_title
-            : `Manually selected AniList ID ${mediaId}`,
-          verified_at: new Date().toISOString(),
-          auto_matched: false
+            ? row.candidate_title : `Manually selected AniList ID ${mediaId}`,
+          verified_at: new Date().toISOString(), auto_matched: false
         };
+
         const { error: mappingError } = await client
           .from('manga_mappings')
           .upsert(mapping, { onConflict: 'site,site_manga_id' });
@@ -465,12 +418,11 @@
         const { error: reviewError } = await client
           .from('pending_reviews')
           .update({ status: 'confirmed', updated_at: new Date().toISOString() })
-          .eq('id', row.id)
-          .eq('owner_id', currentUser.id);
+          .eq('id', row.id).eq('owner_id', currentUser.id);
         if (reviewError) { setMessage(reviewError.message, 'error'); return; }
 
         card.remove();
-        count.textContent = `${list.querySelectorAll('.review-card').length} pending`;
+        updateReviewCount();
         setMessage('Mapping confirmed. The next live sync will use it.', 'success');
       });
 
@@ -479,26 +431,93 @@
         const { error } = await client
           .from('pending_reviews')
           .update({ status: 'rejected', updated_at: new Date().toISOString() })
-          .eq('id', row.id)
-          .eq('owner_id', currentUser.id);
+          .eq('id', row.id).eq('owner_id', currentUser.id);
         if (error) { setMessage(error.message, 'error'); return; }
+
         card.remove();
-        count.textContent = `${list.querySelectorAll('.review-card').length} pending`;
+        updateReviewCount();
         setMessage('Match rejected.', 'success');
       });
+
       return card;
     }
 
-    async function setSession(session) {
-      currentUser = session?.user || null;
+    function updateReviewCount() {
+      const total = list.querySelectorAll('.review-card').length;
+      count.textContent = `${total} pending`;
+      if (total === 0) list.innerHTML = '<p class="success">Nothing needs review.</p>';
+    }
+
+    async function loadPending() {
+      const result = await withTimeout(
+        client.from('pending_reviews').select('*')
+          .eq('owner_id', currentUser.id)
+          .eq('status', 'pending')
+          .order('created_at', { ascending: false }),
+        12000,
+        'Pending-reviews request'
+      );
+
+      const { data, error } = result;
+      if (error) throw new Error(`Pending reviews: ${error.message}`);
+
+      list.innerHTML = '';
+      for (const row of data || []) list.append(renderReview(row));
+      updateReviewCount();
+    }
+
+    async function refreshAll() {
+      if (!currentUser || refreshInProgress) return;
+      refreshInProgress = true;
+      refreshButton.disabled = true;
+      setMessage('Refreshing…');
+
+      try {
+        const results = await Promise.allSettled([loadSourceStatus(), loadPending()]);
+        const failures = results.filter((result) => result.status === 'rejected');
+        lastRefresh.textContent = `Updated ${new Date().toLocaleTimeString()}`;
+
+        if (failures.length) {
+          const details = failures.map((result) => result.reason?.message || String(result.reason)).join(' ');
+          setMessage(`Refresh completed with an error: ${details}`, 'error');
+        } else {
+          setMessage('Up to date.', 'success');
+        }
+      } catch (error) {
+        setMessage(`Refresh failed: ${error.message || error}`, 'error');
+      } finally {
+        refreshInProgress = false;
+        refreshButton.disabled = false;
+      }
+    }
+
+    function applySession(session) {
+      const nextUser = session?.user || null;
+      const nextUserId = nextUser?.id || null;
+      const changed = nextUserId !== appliedUserId;
+      appliedUserId = nextUserId;
+      currentUser = nextUser;
+
       loginSection.hidden = Boolean(currentUser);
       appSection.hidden = !currentUser;
       signOutButton.hidden = !currentUser;
       ownerId.textContent = currentUser?.id || '';
-      if (currentUser) await refreshAll();
-      else {
+
+      if (currentUser) {
+        if (changed) {
+          renderSourceStatus([]);
+          count.textContent = '';
+          list.innerHTML = '<p class="muted">Loading review queue…</p>';
+        }
+        window.setTimeout(() => { void refreshAll(); }, 0);
+      } else {
+        refreshInProgress = false;
+        refreshButton.disabled = false;
         list.innerHTML = '';
         sourceGrid.innerHTML = '';
+        connectionSummary.innerHTML = '';
+        count.textContent = '';
+        lastRefresh.textContent = '';
       }
     }
 
@@ -514,11 +533,16 @@
       setMessage(error ? error.message : 'Check your email for the sign-in link.', error ? 'error' : 'success');
     });
 
-    document.querySelector('#refresh').addEventListener('click', refreshAll);
+    refreshButton.addEventListener('click', () => { void refreshAll(); });
+
     document.querySelector('#copyOwnerId').addEventListener('click', async () => {
       if (!currentUser) return;
-      await navigator.clipboard.writeText(currentUser.id);
-      setMessage('Owner ID copied.', 'success');
+      try {
+        await navigator.clipboard.writeText(currentUser.id);
+        setMessage('Owner ID copied.', 'success');
+      } catch {
+        setMessage('Could not copy automatically. Select the owner ID and copy it manually.', 'error');
+      }
     });
 
     notificationButton.addEventListener('click', async () => {
@@ -527,7 +551,7 @@
       updateNotificationButton();
       if (permission === 'granted') {
         setMessage('Notifications enabled.', 'success');
-        await notifyActionRequired(latestStatuses);
+        void notifyActionRequired(latestStatuses);
       }
     });
 
@@ -540,8 +564,18 @@
     });
 
     signOutButton.addEventListener('click', async () => {
-      await client.auth.signOut();
-      setMessage('Signed out.', 'success');
+      signOutButton.disabled = true;
+      setMessage('Signing out…');
+      try {
+        const { error } = await client.auth.signOut();
+        if (error) throw error;
+        applySession(null);
+        setMessage('Signed out.', 'success');
+      } catch (error) {
+        setMessage(`Sign out failed: ${error.message || error}`, 'error');
+      } finally {
+        signOutButton.disabled = false;
+      }
     });
 
     window.addEventListener('beforeinstallprompt', (event) => {
@@ -551,16 +585,34 @@
     });
 
     document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'visible' && currentUser) refreshAll();
+      if (document.visibilityState === 'visible' && currentUser) void refreshAll();
     });
 
     if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => navigator.serviceWorker.register('service-worker.js'));
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('service-worker.js').catch((error) => {
+          console.warn('Service-worker registration failed', error);
+        });
+      });
     }
+
     updateNotificationButton();
-    setInterval(() => { if (currentUser && document.visibilityState === 'visible') refreshAll(); }, 60000);
-    client.auth.onAuthStateChange((_event, session) => setSession(session));
-    client.auth.getSession().then(({ data }) => setSession(data.session));
+    window.setInterval(() => {
+      if (currentUser && document.visibilityState === 'visible') void refreshAll();
+    }, 60000);
+
+    // Keep the callback synchronous. Supabase documents a deadlock when async API calls
+    // are made from onAuthStateChange. Defer all UI/data work to a later task.
+    client.auth.onAuthStateChange((_event, session) => {
+      window.setTimeout(() => applySession(session), 0);
+    });
+
+    client.auth.getSession()
+      .then(({ data, error }) => {
+        if (error) throw error;
+        applySession(data.session);
+      })
+      .catch((error) => setMessage(`Session load failed: ${error.message || error}`, 'error'));
   </script>
 </body>
 </html>
