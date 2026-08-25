@@ -1,7 +1,42 @@
 'use strict';
 
-const CACHE = 'manga-sync-review-v4';
+const CACHE = 'manga-sync-review-v5';
 const SHELL = ['./', './index.html', './manifest.webmanifest', './icon.svg'];
+
+function patchConnectionSources(html) {
+  return String(html)
+    .replace(
+      "      ['comick', 'ComicK'],",
+      "      ['comick_dev', 'Comick.dev'],\n      ['comick_live', 'Comick.live'],"
+    )
+    .replace(
+      "        if (source === 'mangadex') return 'Check the MangaDex credentials and personal API client.';",
+      "        if (source === 'mangadex') return 'Check the MangaDex credentials and personal API client.';\n        if (source === 'comick_dev') return 'Sign in to Comick.dev in the dedicated Manga Sync Brave profile; the browser agent will refresh its snapshot automatically.';\n        if (source === 'comick_live') return 'Sign in to Comick.live in the dedicated Manga Sync Brave profile; the browser agent will refresh its snapshot automatically.';"
+    )
+    .replace(
+      "      if (status === 'blocked') {\n        return 'Refresh the cookie once. If HTTP 403 continues, Cloudflare may be rejecting GitHub-hosted runners.';\n      }",
+      "      if (status === 'blocked') {\n        if (source === 'comick_dev' || source === 'comick_live') return 'Open the dedicated Manga Sync Brave profile and verify the site still works there; the browser agent owns these sessions.';\n        return 'Refresh the cookie once. If HTTP 403 continues, Cloudflare may be rejecting GitHub-hosted runners.';\n      }"
+    );
+}
+
+async function prepareResponse(request, response) {
+  const url = new URL(request.url);
+  const isEntryPage =
+    response.ok &&
+    (url.pathname.endsWith('/') || url.pathname.endsWith('/index.html')) &&
+    String(response.headers.get('content-type') || '').includes('text/html');
+
+  if (!isEntryPage) return response;
+
+  const html = patchConnectionSources(await response.text());
+  const headers = new Headers(response.headers);
+  headers.set('cache-control', 'no-store');
+  return new Response(html, {
+    status: response.status,
+    statusText: response.statusText,
+    headers,
+  });
+}
 
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(SHELL)));
@@ -20,12 +55,19 @@ self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET' || new URL(event.request.url).origin !== self.location.origin) return;
   event.respondWith(
     fetch(event.request, { cache: 'no-store' })
+      .then((response) => prepareResponse(event.request, response))
       .then((response) => {
         const copy = response.clone();
         caches.open(CACHE).then((cache) => cache.put(event.request, copy));
         return response;
       })
-      .catch(() => caches.match(event.request).then((cached) => cached || caches.match('./index.html')))
+      .catch(() =>
+        caches.match(event.request).then(async (cached) => {
+          if (cached) return prepareResponse(event.request, cached);
+          const fallback = await caches.match('./index.html');
+          return fallback ? prepareResponse(event.request, fallback) : fallback;
+        })
+      )
   );
 });
 
