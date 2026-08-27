@@ -29,10 +29,13 @@
     if (value === 'completed') return 'Completed';
     return 'Reading';
   }
+  function hasExternalLink(row) {
+    return Boolean(row?.anilist_id || row?.comick_dev_id || row?.mangadex_id);
+  }
   function catalogueLabel(row) {
-    if (row.catalogue_status === 'mapped') return 'External catalogue linked';
-    if (row.catalogue_status === 'webtoon_only') return 'WEBTOON only';
-    return 'External match unresolved';
+    if (hasExternalLink(row) || row.catalogue_status === 'mapped') return 'External catalogue linked';
+    if (row.catalogue_status === 'unresolved') return 'External match unresolved';
+    return 'WEBTOON only';
   }
 
   function ensureStyles() {
@@ -103,7 +106,7 @@
 
   function filteredRows() {
     if (activeFilter === 'all') return rows;
-    if (activeFilter === 'webtoon_only') return rows.filter((row) => row.catalogue_status === 'webtoon_only');
+    if (activeFilter === 'webtoon_only') return rows.filter((row) => !hasExternalLink(row) && row.catalogue_status !== 'unresolved');
     return rows.filter((row) => row.tracking_status === activeFilter);
   }
 
