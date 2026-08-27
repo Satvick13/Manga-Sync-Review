@@ -1,22 +1,35 @@
 'use strict';
 
-const CACHE = 'manga-sync-review-v5';
-const SHELL = ['./', './index.html', './manifest.webmanifest', './icon.svg'];
+const CACHE = 'manga-sync-review-v6';
+const SHELL = ['./', './index.html', './manifest.webmanifest', './icon.svg', './webtoon-history.js'];
 
-function patchConnectionSources(html) {
-  return String(html)
+function patchApp(html) {
+  let output = String(html)
     .replace(
       "      ['comick', 'ComicK'],",
-      "      ['comick_dev', 'Comick.dev'],\n      ['comick_live', 'Comick.live'],"
+      "      ['comick_dev', 'Comick.dev'],\n      ['comick_live', 'Comick.live'],\n      ['webtoon', 'WEBTOON'],"
     )
     .replace(
       "        if (source === 'mangadex') return 'Check the MangaDex credentials and personal API client.';",
-      "        if (source === 'mangadex') return 'Check the MangaDex credentials and personal API client.';\n        if (source === 'comick_dev') return 'Sign in to Comick.dev in the dedicated Manga Sync Brave profile; the browser agent will refresh its snapshot automatically.';\n        if (source === 'comick_live') return 'Sign in to Comick.live in the dedicated Manga Sync Brave profile; the browser agent will refresh its snapshot automatically.';"
+      "        if (source === 'mangadex') return 'Check the MangaDex credentials and personal API client.';\n        if (source === 'comick_dev') return 'Sign in to Comick.dev in the dedicated Manga Sync Brave profile; the browser agent will refresh its snapshot automatically.';\n        if (source === 'comick_live') return 'Sign in to Comick.live in the dedicated Manga Sync Brave profile; the browser agent will refresh its snapshot automatically.';\n        if (source === 'webtoon') return 'Connect the Android phone, open WEBTOON → MY → RECENT and run npm run collect-webtoon in the private bridge repository.';"
     )
     .replace(
       "      if (status === 'blocked') {\n        return 'Refresh the cookie once. If HTTP 403 continues, Cloudflare may be rejecting GitHub-hosted runners.';\n      }",
-      "      if (status === 'blocked') {\n        if (source === 'comick_dev' || source === 'comick_live') return 'Open the dedicated Manga Sync Brave profile and verify the site still works there; the browser agent owns these sessions.';\n        return 'Refresh the cookie once. If HTTP 403 continues, Cloudflare may be rejecting GitHub-hosted runners.';\n      }"
+      "      if (status === 'blocked') {\n        if (source === 'comick_dev' || source === 'comick_live') return 'Open the dedicated Manga Sync Brave profile and verify the site still works there; the browser agent owns these sessions.';\n        return 'Refresh the cookie once. If HTTP 403 continues, Cloudflare may be rejecting the current automated session.';\n      }"
+    )
+    .replace(
+      "script-src 'unsafe-inline' https://cdn.jsdelivr.net",
+      "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net"
+    )
+    .replace(
+      "img-src 'self' data: https://s4.anilist.co https://*.anilist.co",
+      "img-src 'self' data: https://s4.anilist.co https://*.anilist.co https://*.pstatic.net https://*.webtoons.com"
     );
+
+  if (!output.includes('webtoon-history.js')) {
+    output = output.replace('</body>', '  <script src="./webtoon-history.js"></script>\n</body>');
+  }
+  return output;
 }
 
 async function prepareResponse(request, response) {
@@ -25,17 +38,12 @@ async function prepareResponse(request, response) {
     response.ok &&
     (url.pathname.endsWith('/') || url.pathname.endsWith('/index.html')) &&
     String(response.headers.get('content-type') || '').includes('text/html');
-
   if (!isEntryPage) return response;
 
-  const html = patchConnectionSources(await response.text());
+  const html = patchApp(await response.text());
   const headers = new Headers(response.headers);
   headers.set('cache-control', 'no-store');
-  return new Response(html, {
-    status: response.status,
-    statusText: response.statusText,
-    headers,
-  });
+  return new Response(html, { status: response.status, statusText: response.statusText, headers });
 }
 
 self.addEventListener('install', (event) => {
